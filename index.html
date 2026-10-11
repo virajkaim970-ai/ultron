@@ -3,107 +3,207 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Milk Bill Tracker</title>
+<title>Milk Bill Generator</title>
 <style>
-  :root{
-    color-scheme: dark;
-    --bg:#0f1420; --card:#171e2e; --card2:#1e273a; --line:#2a3448;
-    --text:#e8edf7; --muted:#8d9ab3; --accent:#4f8cff;
-    --green:#22c55e; --red:#ef4444; --amber:#f59e0b;
-  }
-  *{box-sizing:border-box}
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
   body{
-    margin:0; padding:16px 14px 70px;
-    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
-    background:var(--bg); color:var(--text); -webkit-text-size-adjust:100%;
+    margin:0;
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    background:#eef3fb;
+    background-image:
+      radial-gradient(circle at 8% 0%, #ffffff 0%, transparent 45%),
+      radial-gradient(circle at 95% 100%, #e2ecff 0%, transparent 40%);
+    min-height:100vh;
+    color:#0f172a;
+    padding:18px 14px 80px;
   }
-  .wrap{max-width:820px;margin:0 auto}
-  h1{font-size:20px;margin:0 0 4px}
-  .sub{color:var(--muted);font-size:13px;margin:0 0 16px}
+  .wrap{max-width:720px;margin:0 auto}
 
-  .tabs{display:flex;gap:6px;background:var(--card);padding:5px;border-radius:12px;margin-bottom:16px;border:1px solid var(--line)}
-  .tab{flex:1;padding:10px;border:0;background:transparent;color:var(--muted);
-       font-size:14px;font-weight:600;border-radius:9px;cursor:pointer;font-family:inherit}
-  .tab.active{background:var(--accent);color:#fff}
+  /* ---------- header ---------- */
+  .app-header{display:flex;align-items:center;gap:14px;margin-bottom:18px}
+  .logo{
+    width:54px;height:54px;border-radius:17px;display:grid;place-items:center;
+    background:linear-gradient(135deg,#3b82f6,#2563eb);
+    box-shadow:0 10px 20px -8px rgba(37,99,235,.75);
+    font-size:28px;line-height:1;
+  }
+  h1{font-size:22px;margin:0;letter-spacing:-.02em;font-weight:800}
+  .app-header p{margin:3px 0 0;font-size:13px;color:#64748b}
 
-  .card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;margin-bottom:14px}
-  .card-title{font-size:15px;font-weight:700;margin-bottom:12px}
-  label{display:block;font-size:11px;color:var(--muted);margin-bottom:6px;
-        font-weight:700;text-transform:uppercase;letter-spacing:.05em}
+  /* ---------- tabs ---------- */
+  .tabs{
+    display:flex;gap:4px;background:#fff;padding:5px;border-radius:14px;
+    margin-bottom:16px;border:1px solid #e6edf7;
+    box-shadow:0 2px 10px -4px rgba(15,23,42,.12);
+  }
+  .tab{
+    flex:1;padding:11px 6px;border:0;background:transparent;color:#64748b;
+    font-size:14px;font-weight:700;border-radius:10px;cursor:pointer;
+    font-family:inherit;transition:.15s;
+  }
+  .tab.active{background:#2563eb;color:#fff;box-shadow:0 6px 14px -6px rgba(37,99,235,.9)}
+
+  /* ---------- card ---------- */
+  .card{
+    background:#fff;border:1px solid #e6edf7;border-radius:18px;padding:18px;
+    margin-bottom:14px;box-shadow:0 4px 16px -8px rgba(15,23,42,.14);
+  }
+  .card-title{font-size:15px;font-weight:800;margin-bottom:14px;letter-spacing:-.01em}
+
+  label{
+    display:block;font-size:11px;color:#64748b;margin-bottom:6px;
+    font-weight:800;text-transform:uppercase;letter-spacing:.06em;
+  }
   input[type=date],input[type=number]{
-    width:100%;padding:12px;border-radius:10px;border:1px solid var(--line);
-    background:var(--card2);color:var(--text);font-size:16px;font-family:inherit;
+    width:100%;padding:13px 14px;border-radius:12px;
+    border:1.5px solid #e2e8f0;background:#f8fafc;color:#0f172a;
+    font-size:17px;font-family:inherit;font-weight:700;transition:.15s;
   }
-  input:focus{outline:none;border-color:var(--accent)}
-  .row{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px}
-  .row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:12px}
-  @media(max-width:420px){ .row3{grid-template-columns:1fr} }
+  input:focus{outline:none;border-color:#2563eb;background:#fff;
+    box-shadow:0 0 0 4px rgba(37,99,235,.12)}
 
-  .btn{width:100%;padding:13px;border-radius:10px;border:0;font-size:15px;
-       font-weight:700;cursor:pointer;font-family:inherit;margin-top:4px}
-  .btn.primary{background:var(--accent);color:#fff}
-  .btn.ghost{background:var(--card2);color:var(--text);border:1px solid var(--line)}
-  .btn:active{transform:scale(.99)}
+  .row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  @media(max-width:420px){ .row{grid-template-columns:1fr} }
 
-  .quick{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:12px}
-  @media(max-width:480px){ .quick{grid-template-columns:1fr 1fr} }
-  .quick button{padding:9px 4px;border-radius:9px;border:1px solid var(--line);
-    background:var(--card2);color:var(--muted);font-size:12px;font-weight:600;
-    cursor:pointer;font-family:inherit}
-  .quick button:active{background:var(--accent);color:#fff}
+  /* ---------- quantity display ---------- */
+  .qty-big{
+    font-size:30px;font-weight:900;color:#2563eb;letter-spacing:-.03em;
+    text-align:center;margin:12px 0 2px;line-height:1;
+  }
+  .qty-sub{text-align:center;font-size:12.5px;color:#94a3b8;font-weight:600;margin-bottom:2px}
 
-  .hint{font-size:12.5px;color:var(--muted);margin:10px 0 0;line-height:1.5}
-  .hint.warn{color:var(--amber)}
-  .saved{font-size:12px;color:var(--green);height:14px;margin-top:8px;font-weight:600}
+  .chips{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:14px}
+  .chip{
+    padding:11px 4px;border-radius:11px;border:1.5px solid #e2e8f0;
+    background:#f8fafc;color:#475569;font-size:13px;font-weight:700;
+    cursor:pointer;font-family:inherit;transition:.12s;
+  }
+  .chip:hover{border-color:#bfdbfe;background:#eff6ff;color:#2563eb}
+  .chip:active{transform:scale(.96)}
+  .chip.sel{background:#2563eb;border-color:#2563eb;color:#fff}
 
-  .listrow{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--line)}
+  .hint{font-size:12.5px;color:#64748b;margin:12px 0 0;line-height:1.5}
+  .hint.warn{color:#b45309;background:#fffbeb;border:1px solid #fde68a;
+    padding:9px 11px;border-radius:10px}
+  .saved{font-size:12px;color:#059669;height:14px;margin-top:8px;font-weight:700}
+
+  /* ---------- list rows ---------- */
+  .listrow{display:flex;align-items:center;gap:10px;padding:11px 0;
+    border-bottom:1px solid #eef2f8}
   .listrow:last-child{border-bottom:0}
   .lr-main{flex:1;min-width:0}
-  .lr-date{font-size:14px;font-weight:600}
-  .lr-sub{font-size:12px;color:var(--muted);margin-top:2px}
+  .lr-date{font-size:14px;font-weight:700}
+  .lr-sub{font-size:12px;color:#64748b;margin-top:2px}
   .lr-right{text-align:right;white-space:nowrap}
-  .lr-amt{font-size:14px;font-weight:700}
-  .lr-rate{font-size:11px;color:var(--muted);margin-top:2px}
-  .icon-btn{background:transparent;border:0;color:var(--muted);font-size:16px;
-    cursor:pointer;padding:6px 8px;border-radius:8px;font-family:inherit}
-  .icon-btn:hover{color:var(--red);background:rgba(239,68,68,.1)}
+  .lr-amt{font-size:14px;font-weight:800}
+  .lr-rate{font-size:11px;color:#94a3b8;margin-top:2px;font-weight:600}
+  .icon-btn{background:transparent;border:0;color:#cbd5e1;font-size:16px;
+    cursor:pointer;padding:6px 8px;border-radius:8px;font-family:inherit;
+    transition:.12s}
+  .icon-btn:hover{color:#ef4444;background:#fef2f2}
 
-  .stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:10px;margin-bottom:14px}
-  .stat{background:var(--card2);border:1px solid var(--line);border-radius:11px;padding:11px 12px}
-  .stat.hl{background:rgba(79,140,255,.13);border-color:var(--accent)}
-  .stat-v{font-size:17px;font-weight:800;letter-spacing:-.02em}
-  .stat.hl .stat-v{color:var(--accent)}
-  .stat-l{font-size:11px;color:var(--muted);margin-top:3px;text-transform:uppercase;
-    letter-spacing:.04em;font-weight:600}
+  /* ---------- buttons ---------- */
+  .btn{
+    width:100%;padding:14px;border-radius:12px;border:0;font-size:15px;
+    font-weight:800;cursor:pointer;font-family:inherit;margin-top:4px;
+    transition:.15s;letter-spacing:-.01em;
+  }
+  .btn.primary{background:#2563eb;color:#fff;
+    box-shadow:0 8px 18px -8px rgba(37,99,235,.9)}
+  .btn.primary:active{transform:scale(.985)}
+  .btn.ghost{background:#fff;color:#0f172a;border:1.5px solid #e2e8f0;margin-top:14px}
+  .btn.ghost:hover{background:#f8fafc}
 
-  .tblwrap{overflow-x:auto;-webkit-overflow-scrolling:touch}
-  table{width:100%;border-collapse:collapse;font-size:13.5px}
-  th,td{padding:9px 8px;text-align:right;border-bottom:1px solid var(--line);white-space:nowrap}
+  /* ---------- quick range ---------- */
+  .quick{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:14px 0}
+  @media(max-width:480px){ .quick{grid-template-columns:1fr 1fr} }
+  .quick button{
+    padding:10px 4px;border-radius:10px;border:1.5px solid #e2e8f0;
+    background:#f8fafc;color:#64748b;font-size:12px;font-weight:700;
+    cursor:pointer;font-family:inherit;transition:.12s;
+  }
+  .quick button:hover{border-color:#bfdbfe;color:#2563eb;background:#eff6ff}
+
+  /* ---------- receipt ---------- */
+  .receipt{
+    background:#fff;border:1px solid #e6edf7;border-radius:18px;
+    padding:22px 20px 20px;box-shadow:0 10px 30px -14px rgba(15,23,42,.28);
+    margin-bottom:14px;
+  }
+  .receipt-head{text-align:center;padding-bottom:16px;border-bottom:2px dashed #e2e8f0}
+  .receipt-head .r-title{font-size:13px;font-weight:800;color:#2563eb;
+    letter-spacing:.12em;text-transform:uppercase}
+  .receipt-period{font-size:13.5px;color:#64748b;font-weight:700;margin-top:7px}
+
+  .receipt-total-label{
+    font-size:11px;font-weight:800;color:#64748b;letter-spacing:.14em;
+    text-transform:uppercase;margin:22px 0 8px;text-align:center;
+  }
+  .receipt-total{
+    font-size:46px;font-weight:900;color:#2563eb;text-align:center;
+    letter-spacing:-.045em;line-height:1;margin-bottom:4px;
+    word-break:break-all;
+  }
+  .receipt-total-sub{text-align:center;font-size:13px;color:#94a3b8;font-weight:600}
+
+  .receipt-stats{
+    display:grid;grid-template-columns:repeat(3,1fr);gap:10px;
+    margin-top:22px;padding-top:18px;border-top:2px dashed #e2e8f0;
+  }
+  .rstat{text-align:center}
+  .rstat-v{font-size:16px;font-weight:800;letter-spacing:-.02em}
+  .rstat-l{font-size:10.5px;color:#94a3b8;margin-top:3px;
+    text-transform:uppercase;letter-spacing:.05em;font-weight:800}
+
+  details{margin-top:18px;border-top:2px dashed #e2e8f0;padding-top:14px}
+  summary{
+    cursor:pointer;font-size:13px;font-weight:800;color:#2563eb;
+    list-style:none;text-align:center;user-select:none;
+  }
+  summary::-webkit-details-marker{display:none}
+  summary::after{content:' ▾'}
+  details[open] summary::after{content:' ▴'}
+
+  .tblwrap{overflow-x:auto;-webkit-overflow-scrolling:touch;margin-top:12px}
+  table{width:100%;border-collapse:collapse;font-size:13px}
+  th,td{padding:8px 6px;text-align:right;border-bottom:1px solid #eef2f8;white-space:nowrap}
   th:first-child,td:first-child{text-align:left}
-  th{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;font-weight:700}
-  tfoot td{font-weight:800;border-top:2px solid var(--line);border-bottom:0;padding-top:12px}
+  th{font-size:10.5px;color:#94a3b8;text-transform:uppercase;
+    letter-spacing:.05em;font-weight:800}
+  td{font-weight:600}
+  tfoot td{font-weight:900;border-top:2px solid #e2e8f0;border-bottom:0;
+    padding-top:11px;color:#0f172a}
 
-  .badge{display:inline-block;background:var(--card2);border:1px solid var(--line);
-    border-radius:20px;padding:6px 11px;font-size:12px;margin:0 6px 6px 0;color:var(--muted)}
-  .badge b{color:var(--text)}
+  .rate-chips{display:flex;flex-wrap:wrap;gap:7px;margin-top:14px;justify-content:center}
+  .rchip{background:#f1f5f9;border:1px solid #e2e8f0;border-radius:20px;
+    padding:6px 11px;font-size:11.5px;color:#475569;font-weight:700}
+  .rchip b{color:#0f172a}
+
+  .empty{text-align:center;padding:26px 10px;color:#94a3b8;font-size:13.5px;font-weight:600}
+
   .hidden{display:none!important}
 
   @media print{
-    body{background:#fff;color:#000;padding:0}
-    .tabs,.no-print,#tab-daily,#tab-price{display:none!important}
+    body{background:#fff;padding:0}
+    .app-header,.tabs,.no-print{display:none!important}
+    .receipt{border:0;box-shadow:none;padding:0}
+    .receipt-total{color:#000}
+    .receipt-head .r-title{color:#000}
+    #tab-daily,#tab-price{display:none!important}
     #tab-bill{display:block!important}
-    .card{background:#fff;border:1px solid #ccc;box-shadow:none;color:#000}
-    .stat{background:#f4f4f4;border-color:#ddd}
-    .stat-v,.stat-l,td,th,.card-title{color:#000}
-    .lr-rate,.hint{color:#555}
-    th,td{border-color:#ddd}
   }
 </style>
 </head>
 <body>
 <div class="wrap">
-  <h1>🥛 Milk Bill Tracker</h1>
-  <p class="sub">Daily entries · changing rates · any date range</p>
+
+  <div class="app-header">
+    <div class="logo">🥛</div>
+    <div>
+      <h1>Milk Bill</h1>
+      <p>Daily milk log &amp; instant bill calculator</p>
+    </div>
+  </div>
 
   <div class="tabs">
     <button class="tab active" data-tab="daily">Daily</button>
@@ -111,24 +211,32 @@
     <button class="tab" data-tab="bill">Bill</button>
   </div>
 
-  <!-- ============ DAILY ============ -->
+  <!-- ================= DAILY ================= -->
   <section id="tab-daily">
+
     <div class="card">
-      <div class="card-title">Add / edit today's milk</div>
-      <div style="margin-bottom:12px">
+      <div class="card-title">Add milk taken</div>
+
+      <div style="margin-bottom:16px">
         <label>Date</label>
         <input type="date" id="entryDate">
       </div>
-      <div class="row">
-        <div>
-          <label>Morning (liters)</label>
-          <input type="number" id="morn" step="0.1" min="0" inputmode="decimal" placeholder="0">
-        </div>
-        <div>
-          <label>Evening (liters)</label>
-          <input type="number" id="eve" step="0.1" min="0" inputmode="decimal" placeholder="0">
-        </div>
+
+      <label>Milk taken (liters)</label>
+      <input type="number" id="qty" step="0.25" min="0" inputmode="decimal" placeholder="1.5">
+
+      <div class="qty-big" id="qtyBig">0</div>
+      <div class="qty-sub" id="qtySub">tap a quick amount below</div>
+
+      <div class="chips" id="chips">
+        <button class="chip" data-qty="0.25">250 ml</button>
+        <button class="chip" data-qty="0.5">500 ml</button>
+        <button class="chip" data-qty="0.75">750 ml</button>
+        <button class="chip" data-qty="1">1 L</button>
+        <button class="chip" data-qty="1.5">1.5 L</button>
+        <button class="chip" data-qty="2">2 L</button>
       </div>
+
       <div class="hint" id="rateHint"></div>
       <div class="saved" id="savedMsg"></div>
     </div>
@@ -137,39 +245,46 @@
       <div class="card-title">Recent entries</div>
       <div id="recentList"></div>
     </div>
+
   </section>
 
-  <!-- ============ PRICE ============ -->
+  <!-- ================= PRICE ================= -->
   <section id="tab-price" class="hidden">
+
     <div class="card">
       <div class="card-title">Set price per liter</div>
       <p class="hint" style="margin-top:0">
         When your milkman changes the rate, add a new entry with the date it starts from.
-        Past bills stay correct automatically.
+        Old bills stay correct automatically.
       </p>
-      <div class="row" style="margin-top:12px">
+
+      <div class="row" style="margin-top:14px">
         <div>
           <label>Effective from</label>
           <input type="date" id="priceDate">
         </div>
         <div>
-          <label>Price per liter</label>
-          <input type="number" id="priceVal" step="0.01" min="0" inputmode="decimal" placeholder="60">
+          <label>Price per liter (₹)</label>
+          <input type="number" id="priceVal" step="0.5" min="0" inputmode="decimal" placeholder="60">
         </div>
       </div>
-      <button class="btn primary" id="addPrice">Save price</button>
+
+      <button class="btn primary" id="addPrice" style="margin-top:14px">Save price</button>
     </div>
 
     <div class="card">
       <div class="card-title">Price history</div>
       <div id="priceList"></div>
     </div>
+
   </section>
 
-  <!-- ============ BILL ============ -->
+  <!-- ================= BILL ================= -->
   <section id="tab-bill" class="hidden">
+
     <div class="card no-print">
       <div class="card-title">Bill period</div>
+
       <div class="row">
         <div>
           <label>From date</label>
@@ -180,69 +295,72 @@
           <input type="date" id="toDate">
         </div>
       </div>
+
       <div class="quick">
         <button data-range="week">This week</button>
         <button data-range="lastweek">Last week</button>
         <button data-range="month">This month</button>
         <button data-range="lastmonth">Last month</button>
       </div>
-      <button class="btn primary" id="calcBtn">Calculate bill</button>
+
+      <button class="btn primary" id="calcBtn">Calculate Bill</button>
     </div>
 
     <div id="billResult"></div>
+
   </section>
+
 </div>
 
 <script>
-/* =========================================================
-   CONFIG
-   ========================================================= */
-const CUR = '₹';               // change to '$', 'Rs ', 'PKR ' etc.
-
-/* =========================================================
+/* ============================================================
    STORAGE
-   ========================================================= */
-const K_ENTRIES = 'milk.entries.v1';
-const K_PRICES  = 'milk.prices.v1';
+   ============================================================ */
+const K_ENTRIES = 'milklog.entries.v1';
+const K_PRICES  = 'milklog.prices.v1';
 
-function load(key, fallback){
-  try { const v = localStorage.getItem(key); return v ? JSON.parse(v) : fallback; }
-  catch(e){ return fallback; }
+function load(k, fb){
+  try { const v = localStorage.getItem(k); return v ? JSON.parse(v) : fb; }
+  catch(e){ return fb; }
 }
-function save(key, val){
-  try { localStorage.setItem(key, JSON.stringify(val)); } catch(e){}
+function save(k, v){
+  try { localStorage.setItem(k, JSON.stringify(v)); } catch(e){}
 }
 
-let entries = load(K_ENTRIES, {});   // { "2026-10-11": {m:1.5, e:1.5} }
-let prices  = load(K_PRICES, []);    // [ {from:"2026-01-01", price:60} ]
+let entries = load(K_ENTRIES, {});   // { "2026-10-11": 1.5 }  (liters, morning only)
+let prices  = load(K_PRICES, []);    // [ { from:"2026-01-01", price:60 } ]
 
 function persist(){ save(K_ENTRIES, entries); save(K_PRICES, prices); }
 
-/* =========================================================
-   DATE + NUMBER HELPERS
-   ========================================================= */
-const pad = n => String(n).padStart(2,'0');
-const isoOf = d => `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
-const todayISO = () => isoOf(new Date());
-const parseISO = s => { const [y,m,d] = s.split('-').map(Number); return new Date(y, m-1, d); };
-const fmtLong  = s => parseISO(s).toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'});
-const fmtShort = s => parseISO(s).toLocaleDateString('en-GB',{day:'2-digit',month:'short'});
-const num = n => Number((+n || 0).toFixed(2));
-const money = n => CUR + (Math.round((+n||0) * 100) / 100).toFixed(2);
+/* ============================================================
+   HELPERS
+   ============================================================ */
+const pad       = n => String(n).padStart(2, '0');
+const isoOf     = d => `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+const todayISO  = () => isoOf(new Date());
+const parseISO  = s => { const [y,m,d] = s.split('-').map(Number); return new Date(y, m-1, d); };
+const fmtLong   = s => parseISO(s).toLocaleDateString('en-GB', { day:'2-digit', month:'short', year:'numeric' });
+const fmtShort  = s => parseISO(s).toLocaleDateString('en-GB', { day:'2-digit', month:'short' });
 
-function eachDate(from, to){
-  const out = [];
-  let d = parseISO(from);
-  const end = parseISO(to);
-  while (d <= end){ out.push(isoOf(d)); d.setDate(d.getDate() + 1); }
-  return out;
+const round2 = n => Math.round((+n || 0) * 100) / 100;
+const round3 = n => Math.round((+n || 0) * 1000) / 1000;
+
+const money = n =>
+  '₹' + round2(n).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+/* Turns 1.5 into "1 L 500 ml", 0.5 into "500 ml", 2 into "2 L" */
+function qtyText(l){
+  l = round3(l);
+  if (l <= 0) return '0';
+  const ml = Math.round(l * 1000);
+  if (ml < 1000) return ml + ' ml';
+  const whole = Math.floor(l);
+  const rem   = Math.round((l - whole) * 1000);
+  if (rem === 0) return whole + ' L';
+  return whole + ' L ' + rem + ' ml';
 }
 
-/* =========================================================
-   PRICE LOOKUP — the heart of the app
-   Returns the price whose "from" date is the latest one
-   that is <= the given date.
-   ========================================================= */
+/* Returns the price whose "from" date is the latest one <= dateStr */
 function priceFor(dateStr){
   let best = null;
   for (const p of prices){
@@ -251,15 +369,20 @@ function priceFor(dateStr){
   return best ? best.price : null;
 }
 
-/* =========================================================
-   DOM SHORTCUTS
-   ========================================================= */
-const $ = s => document.querySelector(s);
+function eachDate(from, to){
+  const out = [];
+  const d   = parseISO(from);
+  const end = parseISO(to);
+  while (d <= end){ out.push(isoOf(d)); d.setDate(d.getDate() + 1); }
+  return out;
+}
+
+const $  = s => document.querySelector(s);
 const $$ = s => [...document.querySelectorAll(s)];
 
-/* =========================================================
+/* ============================================================
    TABS
-   ========================================================= */
+   ============================================================ */
 $$('.tab').forEach(btn => {
   btn.addEventListener('click', () => {
     $$('.tab').forEach(b => b.classList.remove('active'));
@@ -270,47 +393,66 @@ $$('.tab').forEach(btn => {
   });
 });
 
-/* =========================================================
-   DAILY ENTRY
-   ========================================================= */
+/* ============================================================
+   DAILY TAB
+   ============================================================ */
+let saveTimer = null;
+let savedTimer = null;
+
 function flashSaved(){
   const el = $('#savedMsg');
-  el.textContent = 'Saved ✓';
-  clearTimeout(el._t);
-  el._t = setTimeout(() => el.textContent = '', 1500);
+  el.textContent = '✓ Saved';
+  clearTimeout(savedTimer);
+  savedTimer = setTimeout(() => { el.textContent = ''; }, 1400);
+}
+
+function updateQtyDisplay(){
+  const q = parseFloat($('#qty').value) || 0;
+  $('#qtyBig').textContent = qtyText(q);
+  $('#qtySub').textContent = q > 0
+    ? (Math.round(q * 1000) + ' ml total')
+    : 'tap a quick amount below';
+
+  // highlight matching chip
+  $$('.chip').forEach(c => {
+    c.classList.toggle('sel', Math.abs((parseFloat(c.dataset.qty) || 0) - q) < 0.001);
+  });
 }
 
 function updateRateHint(){
   const d = $('#entryDate').value;
-  if (!d){ $('#rateHint').textContent = ''; return; }
-  const rate = priceFor(d);
   const el = $('#rateHint');
+  if (!d){ el.textContent = ''; el.className = 'hint'; return; }
+
+  const rate = priceFor(d);
   if (rate == null){
     el.className = 'hint warn';
-    el.textContent = '⚠ No rate set for this date. Go to the Price tab and add one.';
+    el.textContent = '⚠ No price set for this date. Open the Price tab and add one.';
   } else {
     el.className = 'hint';
-    el.textContent = `Rate on ${fmtLong(d)}: ${money(rate)} per liter`;
+    const q = parseFloat($('#qty').value) || 0;
+    el.textContent = q > 0
+      ? `Rate on ${fmtLong(d)}: ${money(rate)} per liter  →  ${qtyText(q)} = ${money(q * rate)}`
+      : `Rate on ${fmtLong(d)}: ${money(rate)} per liter`;
   }
 }
 
 function loadEntry(){
   const d = $('#entryDate').value;
   if (!d) return;
-  const e = entries[d] || {};
-  $('#morn').value = e.m != null ? e.m : '';
-  $('#eve').value  = e.e != null ? e.e : '';
+  const q = entries[d] || '';
+  $('#qty').value = q;
+  updateQtyDisplay();
   updateRateHint();
 }
 
 function saveEntry(){
   const d = $('#entryDate').value;
   if (!d) return;
-  const m  = parseFloat($('#morn').value) || 0;
-  const ev = parseFloat($('#eve').value)  || 0;
+  const q = round3(parseFloat($('#qty').value) || 0);
 
-  if (m <= 0 && ev <= 0) delete entries[d];
-  else entries[d] = { m, e: ev };
+  if (q <= 0) delete entries[d];
+  else        entries[d] = q;
 
   persist();
   renderRecent();
@@ -318,30 +460,52 @@ function saveEntry(){
   flashSaved();
 }
 
+function scheduleSave(){
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(saveEntry, 350);
+}
+
 $('#entryDate').addEventListener('change', loadEntry);
-$('#morn').addEventListener('change', saveEntry);
-$('#eve').addEventListener('change', saveEntry);
+
+$('#qty').addEventListener('input', () => {
+  updateQtyDisplay();
+  updateRateHint();
+  scheduleSave();
+});
+$('#qty').addEventListener('change', saveEntry);
+
+$('#chips').addEventListener('click', e => {
+  const btn = e.target.closest('.chip');
+  if (!btn) return;
+  const current = parseFloat($('#qty').value) || 0;
+  const target  = parseFloat(btn.dataset.qty);
+
+  // tapping the same chip again clears it
+  $('#qty').value = (Math.abs(current - target) < 0.001) ? '' : target;
+
+  updateQtyDisplay();
+  updateRateHint();
+  saveEntry();
+});
 
 function renderRecent(){
   const keys = Object.keys(entries).sort().reverse().slice(0, 25);
-  const box = $('#recentList');
+  const box  = $('#recentList');
 
   if (!keys.length){
-    box.innerHTML = '<p class="hint" style="margin:0">No entries yet. Add your first day above.</p>';
+    box.innerHTML = '<div class="empty">No entries yet.<br>Add your first day above.</div>';
     return;
   }
 
   box.innerHTML = keys.map(d => {
-    const e = entries[d];
-    const m = +e.m || 0, ev = +e.e || 0;
-    const liters = num(m + ev);
+    const q    = entries[d];
     const rate = priceFor(d);
-    const amt = rate == null ? null : liters * rate;
+    const amt  = rate == null ? null : q * rate;
 
     return `<div class="listrow">
       <div class="lr-main">
         <div class="lr-date">${fmtLong(d)}</div>
-        <div class="lr-sub">${num(m)} L morning + ${num(ev)} L evening = <b>${liters} L</b></div>
+        <div class="lr-sub">${qtyText(q)}</div>
       </div>
       <div class="lr-right">
         <div class="lr-amt">${amt == null ? '—' : money(amt)}</div>
@@ -352,8 +516,8 @@ function renderRecent(){
   }).join('');
 }
 
-$('#recentList').addEventListener('click', ev => {
-  const d = ev.target.getAttribute('data-del');
+$('#recentList').addEventListener('click', e => {
+  const d = e.target.getAttribute('data-del');
   if (!d) return;
   if (!confirm('Delete entry for ' + fmtLong(d) + '?')) return;
   delete entries[d];
@@ -362,9 +526,9 @@ $('#recentList').addEventListener('click', ev => {
   if ($('#entryDate').value === d) loadEntry();
 });
 
-/* =========================================================
-   PRICE SETTINGS
-   ========================================================= */
+/* ============================================================
+   PRICE TAB
+   ============================================================ */
 $('#addPrice').addEventListener('click', () => {
   const d = $('#priceDate').value;
   const v = parseFloat($('#priceVal').value);
@@ -376,34 +540,39 @@ $('#addPrice').addEventListener('click', () => {
 
   const i = prices.findIndex(p => p.from === d);
   if (i >= 0) prices[i].price = v;
-  else prices.push({ from: d, price: v });
+  else        prices.push({ from: d, price: v });
 
   persist();
   renderPrices();
-  updateRateHint();
   renderRecent();
+  updateRateHint();
+
   $('#priceVal').value = '';
   flashSaved();
 });
 
 function renderPrices(){
-  const sorted = [...prices].sort((a,b) => a.from.localeCompare(b.from));
-  const box = $('#priceList');
+  const sorted = [...prices].sort((a, b) => a.from.localeCompare(b.from));
+  const box    = $('#priceList');
 
   if (!sorted.length){
-    box.innerHTML = '<p class="hint" style="margin:0">No prices added yet.</p>';
+    box.innerHTML = '<div class="empty">No prices added yet.</div>';
     return;
   }
 
-  const currentRate = priceFor(todayISO());
+  const current = priceFor(todayISO());
 
   box.innerHTML = sorted.map((p, i) => {
-    const next = sorted[i+1];
+    const next  = sorted[i + 1];
     const until = next ? 'until ' + fmtShort(next.from) : 'onwards';
-    const isCurrent = currentRate != null && p.price === currentRate && p.from <= todayISO();
+    const isCur = current != null && p.price === current && p.from <= todayISO();
+
     return `<div class="listrow">
       <div class="lr-main">
-        <div class="lr-date">${money(p.price)} / liter ${isCurrent ? '<span style="color:var(--green);font-size:11px">● current</span>' : ''}</div>
+        <div class="lr-date">
+          ${money(p.price)} / liter
+          ${isCur ? '<span style="color:#059669;font-size:11px;font-weight:800"> ● current</span>' : ''}
+        </div>
         <div class="lr-sub">from ${fmtLong(p.from)} ${until}</div>
       </div>
       <button class="icon-btn" data-price-del="${p.from}" title="Delete">✕</button>
@@ -411,8 +580,8 @@ function renderPrices(){
   }).join('');
 }
 
-$('#priceList').addEventListener('click', ev => {
-  const d = ev.target.getAttribute('data-price-del');
+$('#priceList').addEventListener('click', e => {
+  const d = e.target.getAttribute('data-price-del');
   if (!d) return;
   if (!confirm('Delete the price starting ' + fmtLong(d) + '?')) return;
   prices = prices.filter(p => p.from !== d);
@@ -422,114 +591,142 @@ $('#priceList').addEventListener('click', ev => {
   updateRateHint();
 });
 
-/* =========================================================
-   BILL CALCULATION
-   ========================================================= */
+/* ============================================================
+   BILL TAB  — the core calculation
+   ============================================================ */
 function calcBill(){
   const from = $('#fromDate').value;
   const to   = $('#toDate').value;
+  const box  = $('#billResult');
 
-  if (!from || !to){ alert('Please pick both dates.'); return; }
-  if (from > to){ alert('"From" date must be before "To" date.'); return; }
+  if (!from || !to){
+    box.innerHTML = '<div class="card"><div class="empty">Pick both dates first.</div></div>';
+    return;
+  }
+  if (from > to){
+    box.innerHTML = '<div class="card"><div class="empty">"From" date must be before "To" date.</div></div>';
+    return;
+  }
 
   const days = eachDate(from, to);
 
-  let totM = 0, totE = 0, totL = 0, totAmt = 0;
-  let recordedDays = 0, missingRate = 0;
+  let totalLiters = 0;
+  let totalAmount = 0;
+  let recordedDays = 0;
+  let missingRateDays = 0;
   const rows = [];
   const byRate = new Map();
 
   for (const d of days){
-    const e = entries[d];
-    if (!e) continue;
+    const q = entries[d];
+    if (!q || q <= 0) continue;
 
-    const m  = +e.m || 0;
-    const ev = +e.e || 0;
-    if (m === 0 && ev === 0) continue;
-
-    const liters = m + ev;
     const rate = priceFor(d);
-
+    totalLiters += q;
     recordedDays++;
-    totM += m; totE += ev; totL += liters;
 
     let amt = 0;
     if (rate == null){
-      missingRate++;
+      missingRateDays++;
     } else {
-      amt = liters * rate;
-      totAmt += amt;
+      amt = q * rate;
+      totalAmount += amt;
+
       const g = byRate.get(rate) || { liters: 0, amount: 0, days: 0 };
-      g.liters += liters; g.amount += amt; g.days++;
+      g.liters += q;
+      g.amount += amt;
+      g.days   += 1;
       byRate.set(rate, g);
     }
-    rows.push({ d, m, e: ev, liters, rate, amt });
+
+    rows.push({ d, q, rate, amt });
   }
 
-  const box = $('#billResult');
-
   if (!rows.length){
-    box.innerHTML = `<div class="card"><div class="card-title">No milk recorded</div>
-      <p class="hint" style="margin:0">There are no entries between ${fmtLong(from)} and ${fmtLong(to)}.</p></div>`;
+    box.innerHTML = `<div class="card">
+      <div class="empty">
+        No milk recorded between<br><b>${fmtLong(from)}</b> and <b>${fmtLong(to)}</b>.
+      </div>
+    </div>`;
     return;
   }
 
-  const rateBreakdown = [...byRate.entries()]
-    .sort((a,b) => a[0] - b[0])
+  const rateChips = [...byRate.entries()]
+    .sort((a, b) => a[0] - b[0])
     .map(([rate, g]) =>
-      `<span class="badge">@ <b>${money(rate)}/L</b> → ${num(g.liters)} L · ${g.days} day${g.days>1?'s':''} = <b>${money(g.amount)}</b></span>`
+      `<span class="rchip">@ <b>${money(rate)}/L</b> · ${qtyText(g.liters)} · ${g.days} day${g.days > 1 ? 's' : ''} = <b>${money(g.amount)}</b></span>`
     ).join('');
 
   const tableRows = rows.map(r => `
     <tr>
       <td>${fmtShort(r.d)}</td>
-      <td>${num(r.m)}</td>
-      <td>${num(r.e)}</td>
-      <td>${num(r.liters)}</td>
+      <td>${qtyText(r.q)}</td>
       <td>${r.rate == null ? '—' : money(r.rate)}</td>
       <td>${r.rate == null ? '—' : money(r.amt)}</td>
     </tr>`).join('');
 
-  const warning = missingRate
-    ? `<p class="hint warn">⚠ ${missingRate} day(s) have no price set, so they were not billed. Add a price in the Price tab.</p>`
+  const warn = missingRateDays
+    ? `<p class="hint warn" style="margin-top:16px">
+         ⚠ ${missingRateDays} day(s) have no price set, so they were not counted.
+         Add a price in the Price tab.
+       </p>`
     : '';
 
   box.innerHTML = `
-    <div class="card">
-      <div class="card-title">Bill from ${fmtLong(from)} to ${fmtLong(to)}</div>
+    <div class="receipt" id="receipt">
 
-      <div class="stats">
-        <div class="stat"><div class="stat-v">${num(totM)} L</div><div class="stat-l">Morning</div></div>
-        <div class="stat"><div class="stat-v">${num(totE)} L</div><div class="stat-l">Evening</div></div>
-        <div class="stat"><div class="stat-v">${num(totL)} L</div><div class="stat-l">Total milk</div></div>
-        <div class="stat"><div class="stat-v">${recordedDays}</div><div class="stat-l">Days</div></div>
-        <div class="stat hl"><div class="stat-v">${money(totAmt)}</div><div class="stat-l">Amount due</div></div>
+      <div class="receipt-head">
+        <div class="r-title">Milk Bill Summary</div>
+        <div class="receipt-period">${fmtLong(from)} &nbsp;→&nbsp; ${fmtLong(to)}</div>
       </div>
 
-      <div style="margin-bottom:14px">${rateBreakdown}</div>
-      ${warning}
+      <div class="receipt-total-label">Total Amount</div>
+      <div class="receipt-total">${money(totalAmount)}</div>
+      <div class="receipt-total-sub">${recordedDays} day${recordedDays > 1 ? 's' : ''} of milk</div>
 
-      <div class="tblwrap">
-        <table>
-          <thead>
-            <tr><th>Date</th><th>Morn</th><th>Eve</th><th>Liters</th><th>Rate</th><th>Amount</th></tr>
-          </thead>
-          <tbody>${tableRows}</tbody>
-          <tfoot>
-            <tr>
-              <td>Total</td>
-              <td>${num(totM)}</td>
-              <td>${num(totE)}</td>
-              <td>${num(totL)}</td>
-              <td></td>
-              <td>${money(totAmt)}</td>
-            </tr>
-          </tfoot>
-        </table>
+      <div class="receipt-stats">
+        <div class="rstat">
+          <div class="rstat-v">${qtyText(totalLiters)}</div>
+          <div class="rstat-l">Total Milk</div>
+        </div>
+        <div class="rstat">
+          <div class="rstat-v">${recordedDays}</div>
+          <div class="rstat-l">Days</div>
+        </div>
+        <div class="rstat">
+          <div class="rstat-v">${totalLiters > 0 ? money(totalAmount / totalLiters) : '—'}</div>
+          <div class="rstat-l">Avg / Liter</div>
+        </div>
       </div>
 
-      <button class="btn ghost no-print" style="margin-top:16px" onclick="window.print()">🖨 Print / Save as PDF</button>
-    </div>`;
+      ${rateChips ? `<div class="rate-chips">${rateChips}</div>` : ''}
+
+      ${warn}
+
+      <details>
+        <summary>View day-by-day breakdown</summary>
+        <div class="tblwrap">
+          <table>
+            <thead>
+              <tr><th>Date</th><th>Milk</th><th>Rate</th><th>Amount</th></tr>
+            </thead>
+            <tbody>${tableRows}</tbody>
+            <tfoot>
+              <tr>
+                <td>Total</td>
+                <td>${qtyText(totalLiters)}</td>
+                <td></td>
+                <td>${money(totalAmount)}</td>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+      </details>
+
+    </div>
+
+    <button class="btn ghost no-print" onclick="window.print()">🖨 Print / Save as PDF</button>
+  `;
 }
 
 $('#calcBtn').addEventListener('click', calcBill);
@@ -538,7 +735,7 @@ $('#calcBtn').addEventListener('click', calcBill);
 $$('.quick button').forEach(b => {
   b.addEventListener('click', () => {
     const kind = b.dataset.range;
-    const now = new Date();
+    const now  = new Date();
     let from, to;
 
     if (kind === 'week'){
@@ -554,7 +751,7 @@ $$('.quick button').forEach(b => {
 
     } else if (kind === 'month'){
       from = isoOf(new Date(now.getFullYear(), now.getMonth(), 1));
-      to = isoOf(now);
+      to   = isoOf(now);
 
     } else { // lastmonth
       from = isoOf(new Date(now.getFullYear(), now.getMonth() - 1, 1));
@@ -562,14 +759,14 @@ $$('.quick button').forEach(b => {
     }
 
     $('#fromDate').value = from;
-    $('#toDate').value = to;
+    $('#toDate').value   = to;
     calcBill();
   });
 });
 
-/* =========================================================
+/* ============================================================
    INIT
-   ========================================================= */
+   ============================================================ */
 (function init(){
   const now = new Date();
 
