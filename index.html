@@ -1,0 +1,515 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Ultron Hologram Globe</title>
+  <style>
+    body {
+      margin: 0;
+      overflow: hidden;
+      background: #000;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    }
+    #info {
+      position: fixed;
+      top: 15px;
+      left: 15px;
+      color: #ff4400;
+      z-index: 10;
+      background: rgba(0,0,0,0.6);
+      padding: 10px 15px;
+      border-radius: 8px;
+      border: 1px solid rgba(255,68,0,0.3);
+      pointer-events: none;
+      font-size: 14px;
+      line-height: 1.5;
+      text-shadow: 0 0 8px #ff4400;
+    }
+    #status {
+      position: fixed;
+      bottom: 20px;
+      left: 20px;
+      color: #ff4400;
+      z-index: 10;
+      background: rgba(0,0,0,0.6);
+      padding: 8px 12px;
+      border-radius: 6px;
+      border: 1px solid rgba(255,68,0,0.3);
+      font-size: 13px;
+    }
+    #start-btn {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      z-index: 20;
+      padding: 15px 30px;
+      font-size: 18px;
+      background: transparent;
+      color: #ff4400;
+      border: 2px solid #ff4400;
+      border-radius: 8px;
+      cursor: pointer;
+      text-shadow: 0 0 10px #ff4400;
+      box-shadow: 0 0 20px rgba(255,68,0,0.3);
+      transition: all 0.3s;
+    }
+    #start-btn:hover {
+      background: rgba(255,68,0,0.1);
+      box-shadow: 0 0 30px rgba(255,68,0,0.6);
+    }
+    #video-container {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      width: 320px;
+      height: 240px;
+      border: 1px solid #ff4400;
+      border-radius: 8px;
+      overflow: hidden;
+      z-index: 10;
+      opacity: 0.8;
+      box-shadow: 0 0 15px rgba(255,68,0,0.2);
+    }
+    #input_video {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      transform: scaleX(-1);
+    }
+    #hand_canvas {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+    }
+  </style>
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+        "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+      }
+    }
+  </script>
+</head>
+<body>
+  <div id="info">
+    <strong>Ultron Hologram</strong><br>
+    Pinch thumb+index to rotate • Pinch both hands to zoom<br>
+    No hand = auto-rotate
+  </div>
+  <div id="status">Click Start to enable camera</div>
+  <button id="start-btn">Start Camera</button>
+  <div id="video-container">
+    <video id="input_video" playsinline></video>
+    <canvas id="hand_canvas"></canvas>
+  </div>
+
+  <script type="module">
+    import * as THREE from 'three';
+    import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
+    import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
+    import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
+    import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
+    import { FilesetResolver, HandLandmarker } from 'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.35/vision_bundle.mjs';
+
+    // --- SCENE SETUP ---
+    const scene = new THREE.Scene();
+    const camera = new THREE.PerspectiveCamera(55, window.innerWidth / window.innerHeight, 0.1, 500);
+    camera.position.set(0, 0.5, 5.5);
+
+    const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    renderer.toneMappingExposure = 0.8;
+    document.body.appendChild(renderer.domElement);
+
+    // --- POST PROCESSING: BLOOM + CHROMATIC ABERRATION ---
+    const composer = new EffectComposer(renderer);
+    composer.addPass(new RenderPass(scene, camera));
+
+    const bloom = new UnrealBloomPass(
+      new THREE.Vector2(window.innerWidth, window.innerHeight),
+      1.8,  // strength
+      0.4,  // radius
+      0.2   // threshold
+    );
+    composer.addPass(bloom);
+
+    const chromaticShader = {
+      uniforms: {
+        tDiffuse: { value: null },
+        uTime: { value: 0 },
+        uIntensity: { value: 0.003 }
+      },
+      vertexShader: `
+        varying vec2 vUv;
+        void main() {
+          vUv = uv;
+          gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+        }
+      `,
+      fragmentShader: `
+        uniform sampler2D tDiffuse;
+        uniform float uTime;
+        uniform float uIntensity;
+        varying vec2 vUv;
+        void main() {
+          vec2 dir = vUv - vec2(0.5);
+          float d = length(dir);
+          float offset = uIntensity * d;
+          float flicker = 1.0 + 0.02 * sin(uTime * 30.0) * sin(uTime * 7.3);
+          vec4 cr = texture2D(tDiffuse, vUv + dir * offset);
+          vec4 cg = texture2D(tDiffuse, vUv);
+          vec4 cb = texture2D(tDiffuse, vUv - dir * offset * 0.5);
+          gl_FragColor = vec4(cr.r, cg.g * 1.05, cb.b * 0.6, 1.0) * flicker;
+          // Push towards amber/orange tone
+          gl_FragColor.rgb = mix(gl_FragColor.rgb, gl_FragColor.rgb * vec3(1.15, 0.85, 0.55), 0.3);
+        }
+      `
+    };
+    const chromaticPass = new ShaderPass(chromaticShader);
+    composer.addPass(chromaticPass);
+
+    // --- ORB GROUP ---
+    const orbGroup = new THREE.Group();
+    scene.add(orbGroup);
+
+    // 1. Layered wireframe shells (outer sphere)
+    const shellGeo = new THREE.SphereGeometry(2, 32, 32);
+    const shellMat = new THREE.MeshBasicMaterial({
+      color: 0xff4400,
+      wireframe: true,
+      transparent: true,
+      opacity: 0.25
+    });
+    const shell = new THREE.Mesh(shellGeo, shellMat);
+    orbGroup.add(shell);
+
+    // Inner shell (slightly smaller, different opacity)
+    const innerShellGeo = new THREE.SphereGeometry(1.85, 24, 24);
+    const innerShellMat = new THREE.MeshBasicMaterial({
+      color: 0xff6600,
+      wireframe: true,
+      transparent: true,
+      opacity: 0.15
+    });
+    const innerShell = new THREE.Mesh(innerShellGeo, innerShellMat);
+    orbGroup.add(innerShell);
+
+    // 2. Spiral inner core (a torus knot with emissive material)
+    const coreGeo = new THREE.TorusKnotGeometry(0.6, 0.12, 64, 8, 2, 3);
+    const coreMat = new THREE.MeshBasicMaterial({
+      color: 0xff2200,
+      wireframe: true,
+      transparent: true,
+      opacity: 0.6
+    });
+    const core = new THREE.Mesh(coreGeo, coreMat);
+    orbGroup.add(core);
+
+    // 3. Floating code-text sprites
+    const spriteCanvas = document.createElement('canvas');
+    spriteCanvas.width = 256;
+    spriteCanvas.height = 64;
+    const sCtx = spriteCanvas.getContext('2d');
+    sCtx.fillStyle = 'rgba(0,0,0,0)';
+    sCtx.fillRect(0, 0, 256, 64);
+    sCtx.font = 'bold 20px monospace';
+    sCtx.fillStyle = '#ff4400';
+    sCtx.fillText('ULTRON', 10, 25);
+    sCtx.fillText('01100101', 10, 50);
+    const spriteTexture = new THREE.CanvasTexture(spriteCanvas);
+
+    for (let i = 0; i < 30; i++) {
+      const spriteMat = new THREE.SpriteMaterial({
+        map: spriteTexture,
+        color: 0xff4400,
+        transparent: true,
+        opacity: 0.4,
+        blending: THREE.AdditiveBlending
+      });
+      const sprite = new THREE.Sprite(spriteMat);
+      const phi = Math.acos(2 * Math.random() - 1);
+      const theta = Math.random() * Math.PI * 2;
+      const r = 2.3 + Math.random() * 0.5;
+      sprite.position.set(
+        r * Math.sin(phi) * Math.cos(theta),
+        r * Math.cos(phi),
+        r * Math.sin(phi) * Math.sin(theta)
+      );
+      sprite.scale.set(0.4, 0.1, 1);
+      orbGroup.add(sprite);
+    }
+
+    // 4. Orbiting debris (small particles)
+    const debrisGeo = new THREE.BufferGeometry();
+    const debrisCount = 400;
+    const debrisPositions = new Float32Array(debrisCount * 3);
+    for (let i = 0; i < debrisCount; i++) {
+      const phi = Math.acos(2 * Math.random() - 1);
+      const theta = Math.random() * Math.PI * 2;
+      const r = 2.1 + Math.random() * 0.8;
+      debrisPositions[i * 3] = r * Math.sin(phi) * Math.cos(theta);
+      debrisPositions[i * 3 + 1] = r * Math.cos(phi);
+      debrisPositions[i * 3 + 2] = r * Math.sin(phi) * Math.sin(theta);
+    }
+    debrisGeo.setAttribute('position', new THREE.BufferAttribute(debrisPositions, 3));
+    const debrisMat = new THREE.PointsMaterial({
+      color: 0xff6600,
+      size: 0.03,
+      transparent: true,
+      opacity: 0.8,
+      blending: THREE.AdditiveBlending
+    });
+    const debris = new THREE.Points(debrisGeo, debrisMat);
+    orbGroup.add(debris);
+
+    // 5. Dust particles (finer, inner cloud)
+    const dustGeo = new THREE.BufferGeometry();
+    const dustCount = 800;
+    const dustPositions = new Float32Array(dustCount * 3);
+    for (let i = 0; i < dustCount; i++) {
+      const phi = Math.acos(2 * Math.random() - 1);
+      const theta = Math.random() * Math.PI * 2;
+      const r = 0.5 + Math.random() * 1.5;
+      dustPositions[i * 3] = r * Math.sin(phi) * Math.cos(theta);
+      dustPositions[i * 3 + 1] = r * Math.cos(phi);
+      dustPositions[i * 3 + 2] = r * Math.sin(phi) * Math.sin(theta);
+    }
+    dustGeo.setAttribute('position', new THREE.BufferAttribute(dustPositions, 3));
+    const dustMat = new THREE.PointsMaterial({
+      color: 0xff2200,
+      size: 0.015,
+      transparent: true,
+      opacity: 0.5,
+      blending: THREE.AdditiveBlending
+    });
+    const dust = new THREE.Points(dustGeo, dustMat);
+    orbGroup.add(dust);
+
+    // 6. Scan rings (orbiting torus rings)
+    const rings = [];
+    for (let i = 0; i < 3; i++) {
+      const ringGeo = new THREE.TorusGeometry(2.3 + i * 0.2, 0.008, 16, 120);
+      const ringMat = new THREE.MeshBasicMaterial({
+        color: 0xff4400,
+        transparent: true,
+        opacity: 0.4
+      });
+      const ring = new THREE.Mesh(ringGeo, ringMat);
+      ring.rotation.x = Math.PI / 2;
+      ring.rotation.y = i * Math.PI / 3;
+      orbGroup.add(ring);
+      rings.push(ring);
+    }
+
+    // --- HAND TRACKING (MediaPipe Tasks Vision) ---
+    const videoElement = document.getElementById('input_video');
+    const handCanvas = document.getElementById('hand_canvas');
+    const ctx = handCanvas.getContext('2d');
+    const statusEl = document.getElementById('status');
+    const startBtn = document.getElementById('start-btn');
+
+    let handLandmarker = null;
+    let lastVideoTime = -1;
+    let handDetected = false;
+
+    // Gesture state
+    let prevPinchDist = null;
+    let prevHandPos = null;
+    let targetRotX = 0;
+    let targetRotY = 0;
+    let targetZoom = 5.5;
+
+    const WASM_CDN = 'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.35/wasm';
+    const MODEL_URL = 'https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task';
+
+    async function startCamera() {
+      if (handLandmarker) return;
+      startBtn.style.display = 'none';
+      statusEl.textContent = 'Loading hand model...';
+
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({
+          video: { width: 640, height: 480, facingMode: 'user' },
+          audio: false
+        });
+        videoElement.srcObject = stream;
+        await videoElement.play();
+
+        const fileset = await FilesetResolver.forVisionTasks(WASM_CDN);
+        const options = {
+          baseOptions: { modelAssetPath: MODEL_URL, delegate: 'GPU' },
+          runningMode: 'VIDEO',
+          numHands: 2,
+          minHandDetectionConfidence: 0.6,
+          minHandPresenceConfidence: 0.6,
+          minTrackingConfidence: 0.6
+        };
+
+        try {
+          handLandmarker = await HandLandmarker.createFromOptions(fileset, options);
+        } catch {
+          // Fallback to CPU if GPU delegate fails
+          options.baseOptions.delegate = 'CPU';
+          handLandmarker = await HandLandmarker.createFromOptions(fileset, options);
+        }
+
+        statusEl.textContent = 'Camera ready — show your hand';
+        detectFrame();
+      } catch (err) {
+        console.error(err);
+        statusEl.textContent = 'Camera error: ' + err.message;
+        startBtn.style.display = 'block';
+      }
+    }
+
+    function detectFrame() {
+      if (!handLandmarker) return;
+      if (videoElement.readyState >= 2 && videoElement.currentTime !== lastVideoTime) {
+        lastVideoTime = videoElement.currentTime;
+        const results = handLandmarker.detectForVideo(videoElement, performance.now());
+        processResults(results);
+      }
+      requestAnimationFrame(detectFrame);
+    }
+
+    function processResults(results) {
+      // Resize canvas to match video
+      if (handCanvas.width !== videoElement.videoWidth || handCanvas.height !== videoElement.videoHeight) {
+        handCanvas.width = videoElement.videoWidth;
+        handCanvas.height = videoElement.videoHeight;
+      }
+      ctx.clearRect(0, 0, handCanvas.width, handCanvas.height);
+
+      if (results.landmarks && results.landmarks.length > 0) {
+        handDetected = true;
+
+        // Draw landmarks
+        ctx.fillStyle = '#ff4400';
+        ctx.shadowBlur = 8;
+        ctx.shadowColor = '#ff4400';
+        for (const hand of results.landmarks) {
+          for (const lm of hand) {
+            const x = (1 - lm.x) * handCanvas.width;
+            const y = lm.y * handCanvas.height;
+            ctx.beginPath();
+            ctx.arc(x, y, 4, 0, 2 * Math.PI);
+            ctx.fill();
+          }
+        }
+
+        // Gesture logic (single hand pinch to rotate, two hands pinch to zoom)
+        if (results.landmarks.length === 1) {
+          const hand = results.landmarks[0];
+          const thumbTip = hand[4];
+          const indexTip = hand[8];
+          const palm = hand[9];
+
+          const pinchDist = Math.hypot(indexTip.x - thumbTip.x, indexTip.y - thumbTip.y);
+
+          if (pinchDist < 0.08) { // pinch detected
+            const px = 1 - palm.x; // mirror
+            const py = palm.y;
+            if (prevHandPos) {
+              const dx = px - prevHandPos.x;
+              const dy = py - prevHandPos.y;
+              targetRotY += dx * 3;
+              targetRotX += dy * 3;
+            }
+            prevHandPos = { x: px, y: py };
+            statusEl.textContent = 'Pinched — drag to rotate';
+          } else {
+            prevHandPos = null;
+            statusEl.textContent = 'Hand detected — pinch to rotate';
+          }
+        } else if (results.landmarks.length === 2) {
+          const h1 = results.landmarks[0];
+          const h2 = results.landmarks[1];
+          const d1 = Math.hypot(h1[8].x - h1[4].x, h1[8].y - h1[4].y);
+          const d2 = Math.hypot(h2[8].x - h2[4].x, h2[8].y - h2[4].y);
+
+          if (d1 < 0.08 && d2 < 0.08) { // both pinching
+            const dist = Math.hypot(h1[9].x - h2[9].x, h1[9].y - h2[9].y);
+            if (prevPinchDist) {
+              const delta = dist - prevPinchDist;
+              targetZoom -= delta * 15;
+              targetZoom = THREE.MathUtils.clamp(targetZoom, 2, 12);
+            }
+            prevPinchDist = dist;
+            statusEl.textContent = 'Both hands pinched — spread/close to zoom';
+          } else {
+            prevPinchDist = null;
+          }
+        }
+      } else {
+        handDetected = false;
+        prevHandPos = null;
+        prevPinchDist = null;
+        statusEl.textContent = 'No hand — auto-rotating';
+      }
+    }
+
+    startBtn.addEventListener('click', startCamera);
+
+    // --- ANIMATION LOOP ---
+    const clock = new THREE.Clock();
+
+    function animate() {
+      requestAnimationFrame(animate);
+      const t = clock.getElapsedTime();
+
+      // Update shader time
+      chromaticPass.uniforms.uTime.value = t;
+
+      // Auto-rotate if no hand
+      if (!handDetected) {
+        targetRotY += 0.003;
+        targetRotX += 0.001;
+      }
+
+      // Smooth rotation
+      orbGroup.rotation.x += (targetRotX - orbGroup.rotation.x) * 0.08;
+      orbGroup.rotation.y += (targetRotY - orbGroup.rotation.y) * 0.08;
+
+      // Smooth zoom
+      camera.position.z += (targetZoom - camera.position.z) * 0.08;
+      camera.lookAt(0, 0, 0);
+
+      // Animate core spiral
+      core.rotation.x += 0.005;
+      core.rotation.y += 0.008;
+
+      // Animate rings
+      rings.forEach((ring, i) => {
+        ring.rotation.z += 0.002 * (i + 1);
+      });
+
+      // Animate debris and dust slowly
+      debris.rotation.y += 0.0005;
+      dust.rotation.y -= 0.0008;
+
+      // Render with post-processing
+      composer.render();
+    }
+
+    animate();
+
+    // --- RESIZE ---
+    window.addEventListener('resize', () => {
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+      composer.setSize(window.innerWidth, window.innerHeight);
+    });
+  </script>
+</body>
+</html>
